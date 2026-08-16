@@ -1,51 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:final_project/screens/signup_screen.dart';
 import 'package:final_project/state_management/auth_provider.dart';
 import 'package:final_project/utility/validators.dart';
 import 'package:final_project/widgets/auth_error_widget.dart';
 import 'package:final_project/widgets/auth_field_widget.dart';
 
-class SignupScreen extends StatefulWidget {
-  const SignupScreen({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _LoginScreenState extends State<LoginScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _name = TextEditingController();
   final TextEditingController _email = TextEditingController();
   final TextEditingController _password = TextEditingController();
-  final TextEditingController _confirmPassword = TextEditingController();
 
   @override
   void dispose() {
-    _name.dispose();
     _email.dispose();
     _password.dispose();
-    _confirmPassword.dispose();
     super.dispose();
   }
 
-  Future<void> _signUp() async {
+  Future<void> _signIn() async {
     if (!_formKey.currentState!.validate()) return;
 
     FocusScope.of(context).unfocus();
 
-    final created = await context.read<AuthProvider>().signUp(
-      name: _name.text,
+    await context.read<AuthProvider>().signIn(
       email: _email.text,
       password: _password.text,
     );
-
-    if (created && mounted) Navigator.pop(context);
   }
 
-  void _backToSignIn() {
+  void _openSignUp() {
     context.read<AuthProvider>().clearError();
-    Navigator.pop(context);
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const SignupScreen()),
+    );
   }
 
   @override
@@ -53,7 +51,6 @@ class _SignupScreenState extends State<SignupScreen> {
     final provider = context.watch<AuthProvider>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Create account')),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -65,26 +62,24 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const Text(
+                      '🌍',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 56),
+                    ),
+                    const SizedBox(height: 12),
                     Text(
-                      'Start learning',
+                      'Welcome back',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Your conversations are saved to your account.',
+                      'Sign in to continue practising with your tutor.',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 28),
-                    AuthFieldWidget(
-                      controller: _name,
-                      label: 'Name',
-                      icon: Icons.person_outline,
-                      keyboardType: TextInputType.name,
-                      validator: CustomValidators.validateName,
-                    ),
-                    const SizedBox(height: 16),
                     AuthFieldWidget(
                       controller: _email,
                       label: 'Email',
@@ -98,21 +93,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       label: 'Password',
                       icon: Icons.lock_outline,
                       isPassword: true,
-                      validator: CustomValidators.validatePassword,
-                    ),
-                    const SizedBox(height: 16),
-                    AuthFieldWidget(
-                      controller: _confirmPassword,
-                      label: 'Confirm password',
-                      icon: Icons.lock_reset_outlined,
-                      isPassword: true,
                       textInputAction: TextInputAction.done,
-                      validator: (value) =>
-                          CustomValidators.validateConfirmPassword(
-                            value,
-                            _password.text,
-                          ),
-                      onSubmitted: _signUp,
+                      validator: CustomValidators.validatePassword,
+                      onSubmitted: _signIn,
                     ),
                     if (provider.error != null) ...[
                       const SizedBox(height: 16),
@@ -120,19 +103,19 @@ class _SignupScreenState extends State<SignupScreen> {
                     ],
                     const SizedBox(height: 24),
                     FilledButton(
-                      onPressed: provider.isSubmitting ? null : _signUp,
+                      onPressed: provider.isSubmitting ? null : _signIn,
                       child: provider.isSubmitting
                           ? const SizedBox(
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Create account'),
+                          : const Text('Sign in'),
                     ),
                     const SizedBox(height: 8),
                     TextButton(
-                      onPressed: provider.isSubmitting ? null : _backToSignIn,
-                      child: const Text('Already have an account? Sign in'),
+                      onPressed: provider.isSubmitting ? null : _openSignUp,
+                      child: const Text("New here? Create an account"),
                     ),
                   ],
                 ),

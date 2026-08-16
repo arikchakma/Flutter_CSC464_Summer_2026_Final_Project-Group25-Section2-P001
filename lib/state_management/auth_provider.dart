@@ -74,6 +74,15 @@ class AuthProvider with ChangeNotifier {
     });
   }
 
+  Future<bool> signIn({required String email, required String password}) async {
+    return _submit(() async {
+      await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+    });
+  }
+
   Future<void> signOut() async {
     error = null;
     await _auth.signOut();
@@ -111,17 +120,23 @@ class AuthProvider with ChangeNotifier {
   String _messageFor(String code) {
     switch (code) {
       case 'email-already-in-use':
-        return 'That email is already registered.';
+        return 'That email is already registered. Try signing in instead.';
       case 'invalid-email':
         return 'That email address does not look right.';
       case 'weak-password':
         return 'Please choose a stronger password of at least 6 characters.';
+      case 'user-not-found':
+      case 'wrong-password':
+      case 'invalid-credential':
+        return 'Email or password is incorrect.';
+      case 'user-disabled':
+        return 'This account has been disabled.';
       case 'too-many-requests':
         return 'Too many attempts. Please wait a moment and try again.';
       case 'network-request-failed':
         return 'No internet connection. Please try again.';
       case 'operation-not-allowed':
-        return 'Email sign up is turned off for this project.';
+        return 'Email sign in is turned off for this project.';
       default:
         return 'Could not complete that. Please try again.';
     }
