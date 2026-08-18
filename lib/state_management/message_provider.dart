@@ -6,10 +6,11 @@ import 'package:flutter/material.dart';
 
 import 'package:final_project/models/message_model.dart';
 import 'package:final_project/utility/constant.dart';
+import 'package:final_project/utility/title_helper.dart';
 
 class MessageProvider with ChangeNotifier {
   final CollectionReference _chats = FirebaseFirestore.instance.collection(
-    chatsCollection,
+    AppConstant.chatsCollection,
   );
 
   StreamSubscription<QuerySnapshot>? _subscription;
@@ -22,7 +23,7 @@ class MessageProvider with ChangeNotifier {
   String? error;
 
   CollectionReference get _messages =>
-      _chats.doc(chatId).collection(messagesCollection);
+      _chats.doc(chatId).collection(AppConstant.messagesCollection);
 
   void openChat(String id) {
     chatId = id;
@@ -66,10 +67,12 @@ class MessageProvider with ChangeNotifier {
 
     final userMessage = MessageModel(
       id: '',
-      sender: senderUser,
+      sender: AppConstant.senderUser,
       message: trimmed,
       timestamp: DateTime.now(),
     );
+
+    final isFirstMessage = messages.isEmpty;
 
     isSending = true;
     error = null;
@@ -77,12 +80,16 @@ class MessageProvider with ChangeNotifier {
 
     try {
       await _messages.add(userMessage.toJson());
-      await _touchChat(trimmed);
+      await _updateChatPreview(trimmed);
     } catch (_) {
       isSending = false;
       error = 'Could not save your message.';
       notifyListeners();
       return;
+    }
+
+    if (isFirstMessage) {
+      await _generateChatTitle(language, trimmed);
     }
 
     await _requestReply(language, [...messages, userMessage]);
@@ -111,8 +118,15 @@ class MessageProvider with ChangeNotifier {
 
     try {
       final model = FirebaseAI.googleAI().generativeModel(
-        model: geminiModel,
-        systemInstruction: Content.system(tutorInstruction(language)),
+        model: AppConstant.geminiModel,
+        systemInstruction: Content.system(
+          AppConstant.tutorInstruction(language),
+        ),
+        generationConfig: GenerationConfig(
+          thinkingConfig: ThinkingConfig.withThinkingLevel(
+            ThinkingLevel.minimal,
+          ),
+        ),
       );
 
       final chat = model.startChat(
@@ -162,7 +176,7 @@ class MessageProvider with ChangeNotifier {
   Future<void> _saveReply(String reply) async {
     final aiMessage = MessageModel(
       id: 'pending',
-      sender: senderAi,
+      sender: AppConstant.senderAi,
       message: reply,
       timestamp: DateTime.now(),
     );
@@ -173,10 +187,24 @@ class MessageProvider with ChangeNotifier {
     notifyListeners();
 
     await _messages.add(aiMessage.toJson());
-    await _touchChat(reply);
+    await _updateChatPreview(reply);
   }
 
-  Future<void> _touchChat(String lastMessage) async {
+  Future<void> _generateChatTitle(String language, String firstMessage) async {
+    final id = chatId;
+    if (id == null) return;
+
+    final title = await TitleHelper.generateChatTitle(language, firstMessage);
+    if (title.isEmpty) return;
+
+    try {
+      await _chats.doc(id).update({'title': title});
+    } catch (_) {
+      // A missing title is not worth interrupting the conversation for.
+    }
+  }
+
+  Future<void> _updateChatPreview(String lastMessage) async {
     await _chats.doc(chatId).update({
       'lastMessage': lastMessage,
       'updatedAt': Timestamp.fromDate(DateTime.now()),

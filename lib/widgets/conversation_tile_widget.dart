@@ -46,7 +46,7 @@ class ConversationTileWidget extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Text(
-                    flagForLanguage(chat.language),
+                    AppConstant.flagForLanguage(chat.language),
                     style: const TextStyle(fontSize: 24),
                   ),
                 ),
@@ -76,7 +76,7 @@ class ConversationTileWidget extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        formatUpdatedAt(chat.updatedAt),
+                        DateHelper.formatUpdatedAt(chat.updatedAt),
                         style: TextStyle(
                           fontSize: 11,
                           color: scheme.onSurfaceVariant.withValues(alpha: 0.8),

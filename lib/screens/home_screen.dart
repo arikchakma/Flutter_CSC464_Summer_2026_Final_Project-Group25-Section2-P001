@@ -7,6 +7,7 @@ import 'package:final_project/state_management/auth_provider.dart';
 import 'package:final_project/state_management/chat_provider.dart';
 import 'package:final_project/state_management/message_provider.dart';
 import 'package:final_project/widgets/conversation_tile_widget.dart';
+import 'package:final_project/widgets/empty_state_widget.dart';
 import 'package:final_project/widgets/language_picker_widget.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -159,7 +160,7 @@ class HomeScreen extends StatelessWidget {
           }
 
           if (provider.chats.isEmpty) {
-            return _EmptyState(scheme: Theme.of(context).colorScheme);
+            return EmptyStateWidget(scheme: Theme.of(context).colorScheme);
           }
 
           return ListView.builder(
@@ -176,49 +177,6 @@ class HomeScreen extends StatelessWidget {
             },
           );
         },
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final ColorScheme scheme;
-
-  const _EmptyState({required this.scheme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              height: 96,
-              width: 96,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                shape: BoxShape.circle,
-              ),
-              child: const Text('\u{1F310}', style: TextStyle(fontSize: 44)),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              'No conversations yet',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Tap "New chat" to pick a language and start practising.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: scheme.onSurfaceVariant, height: 1.4),
-            ),
-          ],
-        ),
       ),
     );
   }

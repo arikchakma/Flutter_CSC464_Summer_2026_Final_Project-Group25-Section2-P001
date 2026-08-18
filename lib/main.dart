@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'package:final_project/firebase_options.dart';
-import 'package:final_project/screens/auth_gate.dart';
+import 'package:final_project/screens/auth_gate_screen.dart';
 import 'package:final_project/state_management/auth_provider.dart';
 import 'package:final_project/state_management/chat_provider.dart';
 import 'package:final_project/state_management/message_provider.dart';
@@ -35,8 +35,8 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'AI Language Tutor',
         debugShowCheckedModeBanner: false,
-        theme: buildAppTheme(),
-        home: const AuthGate(),
+        theme: AppTheme.buildTheme(),
+        home: const AuthGateScreen(),
       ),
     );
   }

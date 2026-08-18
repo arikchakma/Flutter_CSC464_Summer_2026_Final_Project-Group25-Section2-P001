@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:final_project/widgets/send_button_widget.dart';
+
 class MessageComposerWidget extends StatefulWidget {
   final TextEditingController controller;
   final bool isSending;
@@ -88,40 +90,9 @@ class _MessageComposerWidgetState extends State<MessageComposerWidget> {
                 ),
               ),
               const SizedBox(width: 8),
-              _SendButton(enabled: canSend, onSend: widget.onSend),
+              SendButtonWidget(enabled: canSend, onSend: widget.onSend),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SendButton extends StatelessWidget {
-  final bool enabled;
-  final VoidCallback onSend;
-
-  const _SendButton({required this.enabled, required this.onSend});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      height: 48,
-      width: 48,
-      decoration: BoxDecoration(
-        color: enabled ? scheme.primary : scheme.surfaceContainerHighest,
-        shape: BoxShape.circle,
-      ),
-      child: IconButton(
-        onPressed: enabled ? onSend : null,
-        tooltip: 'Send',
-        icon: Icon(
-          Icons.arrow_upward_rounded,
-          size: 22,
-          color: enabled ? scheme.onPrimary : scheme.onSurfaceVariant,
         ),
       ),
     );

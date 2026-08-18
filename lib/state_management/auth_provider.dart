@@ -11,7 +11,7 @@ class AuthProvider with ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   final CollectionReference _users = FirebaseFirestore.instance.collection(
-    usersCollection,
+    AppConstant.usersCollection,
   );
 
   StreamSubscription<User?>? _subscription;

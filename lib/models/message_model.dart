@@ -15,12 +15,12 @@ class MessageModel {
     required this.timestamp,
   });
 
-  bool get isUser => sender == senderUser;
+  bool get isUser => sender == AppConstant.senderUser;
 
   factory MessageModel.fromJson(String id, Map<String, dynamic> json) {
     return MessageModel(
       id: id,
-      sender: json['sender'] ?? senderAi,
+      sender: json['sender'] ?? AppConstant.senderAi,
       message: json['message'] ?? '',
       timestamp: _parseDate(json['timestamp']),
     );

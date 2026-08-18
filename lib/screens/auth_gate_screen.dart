@@ -5,8 +5,8 @@ import 'package:final_project/screens/home_screen.dart';
 import 'package:final_project/screens/login_screen.dart';
 import 'package:final_project/state_management/auth_provider.dart';
 
-class AuthGate extends StatelessWidget {
-  const AuthGate({super.key});
+class AuthGateScreen extends StatelessWidget {
+  const AuthGateScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -3,10 +3,13 @@ import 'package:provider/provider.dart';
 
 import 'package:final_project/models/chat_model.dart';
 import 'package:final_project/models/message_model.dart';
+import 'package:final_project/state_management/chat_provider.dart';
 import 'package:final_project/state_management/message_provider.dart';
 import 'package:final_project/utility/constant.dart';
+import 'package:final_project/widgets/error_banner_widget.dart';
 import 'package:final_project/widgets/message_bubble_widget.dart';
 import 'package:final_project/widgets/message_composer_widget.dart';
+import 'package:final_project/widgets/typing_indicator_widget.dart';
 
 class ChatScreen extends StatefulWidget {
   final ChatModel chat;
@@ -61,16 +64,26 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
+  ChatModel _currentChat(BuildContext context) {
+    for (final chat in context.watch<ChatProvider>().chats) {
+      if (chat.id == widget.chat.id) return chat;
+    }
+
+    return widget.chat;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final chat = _currentChat(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Text(widget.chat.title),
+            Text(chat.title),
             Text(
-              '${flagForLanguage(widget.chat.language)} ${widget.chat.language}',
+              '${AppConstant.flagForLanguage(widget.chat.language)} ${widget.chat.language}',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -84,7 +97,7 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               Expanded(child: _buildMessages(provider)),
               if (provider.error != null)
-                _ErrorBanner(
+                ErrorBannerWidget(
                   message: provider.error!,
                   onRetry: () => provider.retry(widget.chat.language),
                 ),
@@ -119,7 +132,7 @@ class _ChatScreenState extends State<ChatScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                flagForLanguage(widget.chat.language),
+                AppConstant.flagForLanguage(widget.chat.language),
                 style: const TextStyle(fontSize: 48),
               ),
               const SizedBox(height: 16),
@@ -141,12 +154,12 @@ class _ChatScreenState extends State<ChatScreen> {
       itemCount: provider.messages.length + (hasPending ? 1 : 0),
       itemBuilder: (context, index) {
         if (hasPending && index == 0) {
-          if (isTyping) return const _TypingIndicator();
+          if (isTyping) return const TypingIndicatorWidget();
 
           return MessageBubbleWidget(
             message: MessageModel(
               id: 'streaming',
-              sender: senderAi,
+              sender: AppConstant.senderAi,
               message: provider.streamingReply,
               timestamp: DateTime.now(),
             ),
@@ -162,115 +175,4 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-}
-
-class _TypingIndicator extends StatefulWidget {
-  const _TypingIndicator();
-
-  @override
-  State<_TypingIndicator> createState() => _TypingIndicatorState();
-}
-
-class _TypingIndicatorState extends State<_TypingIndicator>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 1100),
-  )..repeat();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(18),
-            topRight: Radius.circular(18),
-            bottomRight: Radius.circular(18),
-            bottomLeft: Radius.circular(4),
-          ),
-        ),
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(3, (index) {
-                final t = (_controller.value - index * 0.2) % 1.0;
-                final lift = t < 0.5 ? t * 2 : (1 - t) * 2;
-
-                return Padding(
-                  padding: EdgeInsets.only(right: index == 2 ? 0 : 6),
-                  child: Transform.translate(
-                    offset: Offset(0, -3 * lift),
-                    child: Container(
-                      height: 7,
-                      width: 7,
-                      decoration: BoxDecoration(
-                        color: scheme.onSurfaceVariant.withValues(
-                          alpha: 0.4 + 0.6 * lift,
-                        ),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class _ErrorBanner extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const _ErrorBanner({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(12, 4, 12, 4),
-      padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
-      decoration: BoxDecoration(
-        color: scheme.errorContainer,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, size: 20, color: scheme.onErrorContainer),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: scheme.onErrorContainer, fontSize: 13),
-            ),
-          ),
-          TextButton(
-            onPressed: onRetry,
-            style: TextButton.styleFrom(foregroundColor: scheme.onErrorContainer),
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
 }

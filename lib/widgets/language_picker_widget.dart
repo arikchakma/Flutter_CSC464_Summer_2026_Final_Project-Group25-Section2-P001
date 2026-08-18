@@ -31,9 +31,9 @@ class LanguagePickerWidget extends StatelessWidget {
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               shrinkWrap: true,
-              itemCount: supportedLanguages.length,
+              itemCount: AppConstant.supportedLanguages.length,
               itemBuilder: (context, index) {
-                final language = supportedLanguages[index];
+                final language = AppConstant.supportedLanguages[index];
 
                 return ListTile(
                   shape: RoundedRectangleBorder(

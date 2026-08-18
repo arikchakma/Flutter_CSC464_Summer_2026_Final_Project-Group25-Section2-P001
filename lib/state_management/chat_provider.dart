@@ -8,7 +8,7 @@ import 'package:final_project/utility/constant.dart';
 
 class ChatProvider with ChangeNotifier {
   final CollectionReference _chats = FirebaseFirestore.instance.collection(
-    chatsCollection,
+    AppConstant.chatsCollection,
   );
 
   StreamSubscription<QuerySnapshot>? _subscription;
@@ -76,7 +76,7 @@ class ChatProvider with ChangeNotifier {
       id: '',
       userId: userId!,
       language: language,
-      title: '$language Practice',
+      title: 'New conversation',
       lastMessage: '',
       createdAt: now,
       updatedAt: now,
@@ -98,7 +98,7 @@ class ChatProvider with ChangeNotifier {
   Future<void> deleteChat(String chatId) async {
     final messages = await _chats
         .doc(chatId)
-        .collection(messagesCollection)
+        .collection(AppConstant.messagesCollection)
         .get();
 
     for (final message in messages.docs) {
