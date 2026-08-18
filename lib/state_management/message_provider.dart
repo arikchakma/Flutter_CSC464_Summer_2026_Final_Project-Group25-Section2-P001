@@ -1,0 +1,202 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_ai/firebase_ai.dart';
+import 'package:flutter/material.dart';
+
+import 'package:final_project/models/message_model.dart';
+import 'package:final_project/utility/constant.dart';
+
+class MessageProvider with ChangeNotifier {
+  final CollectionReference _chats = FirebaseFirestore.instance.collection(
+    chatsCollection,
+  );
+
+  StreamSubscription<QuerySnapshot>? _subscription;
+
+  String? chatId;
+  List<MessageModel> messages = [];
+  bool isLoading = true;
+  bool isSending = false;
+  String streamingReply = '';
+  String? error;
+
+  CollectionReference get _messages =>
+      _chats.doc(chatId).collection(messagesCollection);
+
+  void openChat(String id) {
+    chatId = id;
+    messages = [];
+    isLoading = true;
+    isSending = false;
+    streamingReply = '';
+    error = null;
+
+    _subscription?.cancel();
+
+    _subscription = _messages
+        .orderBy('timestamp')
+        .snapshots()
+        .listen(
+          (snapshot) {
+            messages = snapshot.docs
+                .map(
+                  (doc) => MessageModel.fromJson(
+                    doc.id,
+                    doc.data() as Map<String, dynamic>,
+                  ),
+                )
+                .toList();
+            isLoading = false;
+            notifyListeners();
+          },
+          onError: (_) {
+            isLoading = false;
+            error = 'Could not load this conversation.';
+            notifyListeners();
+          },
+        );
+
+    notifyListeners();
+  }
+
+  Future<void> sendMessage(String text, String language) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty || isSending || chatId == null) return;
+
+    final userMessage = MessageModel(
+      id: '',
+      sender: senderUser,
+      message: trimmed,
+      timestamp: DateTime.now(),
+    );
+
+    isSending = true;
+    error = null;
+    notifyListeners();
+
+    try {
+      await _messages.add(userMessage.toJson());
+      await _touchChat(trimmed);
+    } catch (_) {
+      isSending = false;
+      error = 'Could not save your message.';
+      notifyListeners();
+      return;
+    }
+
+    await _requestReply(language, [...messages, userMessage]);
+  }
+
+  Future<void> retry(String language) async {
+    if (isSending || messages.isEmpty) return;
+
+    isSending = true;
+    error = null;
+    notifyListeners();
+
+    await _requestReply(language, messages);
+  }
+
+  Future<void> _requestReply(
+    String language,
+    List<MessageModel> history,
+  ) async {
+    if (history.isEmpty) return;
+
+    streamingReply = '';
+    notifyListeners();
+
+    final buffer = StringBuffer();
+
+    try {
+      final model = FirebaseAI.googleAI().generativeModel(
+        model: geminiModel,
+        systemInstruction: Content.system(tutorInstruction(language)),
+      );
+
+      final chat = model.startChat(
+        history: history
+            .take(history.length - 1)
+            .map(
+              (message) => message.isUser
+                  ? Content.text(message.message)
+                  : Content.model([TextPart(message.message)]),
+            )
+            .toList(),
+      );
+
+      final replies = chat.sendMessageStream(
+        Content.text(history.last.message),
+      );
+
+      await for (final reply in replies) {
+        final chunk = reply.text ?? '';
+        if (chunk.isEmpty) continue;
+
+        buffer.write(chunk);
+        streamingReply = buffer.toString();
+        notifyListeners();
+      }
+    } on FirebaseAIException catch (_) {
+      error = 'The tutor is busy right now. Please try again.';
+    } catch (_) {
+      error = 'Could not reach the tutor. Please try again.';
+    }
+
+    final reply = buffer.toString().trim();
+
+    if (error == null && reply.isEmpty) {
+      error = 'The tutor did not send a reply.';
+    }
+
+    if (error == null) {
+      await _saveReply(reply);
+    }
+
+    streamingReply = '';
+    isSending = false;
+    notifyListeners();
+  }
+
+  Future<void> _saveReply(String reply) async {
+    final aiMessage = MessageModel(
+      id: 'pending',
+      sender: senderAi,
+      message: reply,
+      timestamp: DateTime.now(),
+    );
+
+    messages = [...messages, aiMessage];
+    streamingReply = '';
+    isSending = false;
+    notifyListeners();
+
+    await _messages.add(aiMessage.toJson());
+    await _touchChat(reply);
+  }
+
+  Future<void> _touchChat(String lastMessage) async {
+    await _chats.doc(chatId).update({
+      'lastMessage': lastMessage,
+      'updatedAt': Timestamp.fromDate(DateTime.now()),
+    });
+  }
+
+  void clear() {
+    _subscription?.cancel();
+    _subscription = null;
+    chatId = null;
+    messages = [];
+    isLoading = true;
+    isSending = false;
+    streamingReply = '';
+    error = null;
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+}
